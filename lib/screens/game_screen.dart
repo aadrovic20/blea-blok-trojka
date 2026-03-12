@@ -509,6 +509,9 @@ class _GameScreenState extends State<GameScreen> {
               child: TextField(
                 controller: stihCtrl,
                 keyboardType: TextInputType.number,
+                textInputAction:
+                    TextInputAction.done, // ← DODAJ – tipka Done/Cancel
+                onSubmitted: (_) => FocusScope.of(context).unfocus(), // ← DODAJ
                 decoration: const InputDecoration(
                   labelText: "Štih",
                   isDense: true,
@@ -521,6 +524,9 @@ class _GameScreenState extends State<GameScreen> {
               child: TextField(
                 controller: zvanjeCtrl,
                 keyboardType: TextInputType.number,
+                textInputAction:
+                    TextInputAction.done, // ← DODAJ – tipka Done/Cancel
+                onSubmitted: (_) => FocusScope.of(context).unfocus(), // ← DODAJ
                 decoration: const InputDecoration(
                   labelText: "Zvanje",
                   isDense: true,
@@ -717,6 +723,9 @@ class _GameScreenState extends State<GameScreen> {
           child: TextField(
             controller: stihCtrl,
             keyboardType: TextInputType.number,
+            textInputAction:
+                TextInputAction.done, // ← DODAJ – tipka Done/Cancel
+            onSubmitted: (_) => FocusScope.of(context).unfocus(), // ← DODAJ
             readOnly: isAuto,
             style: TextStyle(
               fontSize: 18,
@@ -763,6 +772,9 @@ class _GameScreenState extends State<GameScreen> {
           child: TextField(
             controller: zvanjeCtrl,
             keyboardType: TextInputType.number,
+            textInputAction:
+                TextInputAction.done, // ← DODAJ – tipka Done/Cancel
+            onSubmitted: (_) => FocusScope.of(context).unfocus(), // ← DODAJ
             style: TextStyle(
               fontSize: 15,
               color: color,
@@ -830,249 +842,256 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     bool imaZvanja = trenutnaIgra != bazaIgra;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
-      appBar: AppBar(
-        title: const Text(
-          "Belot Blok",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            color: Colors.white,
-            letterSpacing: 1,
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF0F2F5),
+        appBar: AppBar(
+          title: const Text(
+            "Belot Blok",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: Colors.white,
+              letterSpacing: 1,
             ),
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            onPressed: resetWins,
-            tooltip: "Reset pobjeda",
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
           ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                _playerCard(player1, score1, wins1, p1Color),
-                const SizedBox(width: 8),
-                _playerCard(player2, score2, wins2, p2Color),
-                const SizedBox(width: 8),
-                _playerCard(player3, score3, wins3, p3Color),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            Expanded(
-              child: rounds.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.style_rounded,
-                            size: 56,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            "Nema rundi još.",
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            "Dodajte prvu rundu!",
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: rounds.length,
-                      itemBuilder: (context, index) {
-                        final r = rounds[index];
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            leading: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: _zvacGradient(r.zvac),
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                "${index + 1}",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _roundScore(r.p1Stih, r.p1Zvanje, p1Color),
-                                _roundScore(r.p2Stih, r.p2Zvanje, p2Color),
-                                _roundScore(r.p3Stih, r.p3Zvanje, p3Color),
-                              ],
-                            ),
-                            onTap: () => editRound(index),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              decoration: BoxDecoration(
-                color: imaZvanja ? const Color(0xFFFFFDE7) : Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: imaZvanja
-                      ? const Color(0xFFFFCA28)
-                      : Colors.grey.shade200,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                imaZvanja
-                    ? "🃏  Igra: $bazaIgra + zvanja = $trenutnaIgra"
-                    : "🃏  Igra: $bazaIgra",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: imaZvanja
-                      ? const Color(0xFFF57F17)
-                      : Colors.grey.shade500,
-                  letterSpacing: 0.3,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            _inputRow(
-              'p1',
-              player1,
-              p1Color,
-              p1StihController,
-              p1ZvanjeController,
-            ),
-            const SizedBox(height: 6),
-            _inputRow(
-              'p2',
-              player2,
-              p2Color,
-              p2StihController,
-              p2ZvanjeController,
-            ),
-            const SizedBox(height: 6),
-            _inputRow(
-              'p3',
-              player3,
-              p3Color,
-              p3StihController,
-              p3ZvanjeController,
-            ),
-
-            const SizedBox(height: 10),
-
-            Container(
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1565C0).withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: addRound,
-                icon: const Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-                label: const Text(
-                  "Dodaj rundu",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+              onPressed: resetWins,
+              tooltip: "Reset pobjeda",
             ),
           ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  _playerCard(player1, score1, wins1, p1Color),
+                  const SizedBox(width: 8),
+                  _playerCard(player2, score2, wins2, p2Color),
+                  const SizedBox(width: 8),
+                  _playerCard(player3, score3, wins3, p3Color),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              Expanded(
+                child: rounds.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.style_rounded,
+                              size: 56,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "Nema rundi još.",
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              "Dodajte prvu rundu!",
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: rounds.length,
+                        itemBuilder: (context, index) {
+                          final r = rounds[index];
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              leading: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: _zvacGradient(r.zvac),
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  "${index + 1}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _roundScore(r.p1Stih, r.p1Zvanje, p1Color),
+                                  _roundScore(r.p2Stih, r.p2Zvanje, p2Color),
+                                  _roundScore(r.p3Stih, r.p3Zvanje, p3Color),
+                                ],
+                              ),
+                              onTap: () => editRound(index),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: imaZvanja ? const Color(0xFFFFFDE7) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: imaZvanja
+                        ? const Color(0xFFFFCA28)
+                        : Colors.grey.shade200,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  imaZvanja
+                      ? "🃏  Igra: $bazaIgra + zvanja = $trenutnaIgra"
+                      : "🃏  Igra: $bazaIgra",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: imaZvanja
+                        ? const Color(0xFFF57F17)
+                        : Colors.grey.shade500,
+                    letterSpacing: 0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              _inputRow(
+                'p1',
+                player1,
+                p1Color,
+                p1StihController,
+                p1ZvanjeController,
+              ),
+              const SizedBox(height: 6),
+              _inputRow(
+                'p2',
+                player2,
+                p2Color,
+                p2StihController,
+                p2ZvanjeController,
+              ),
+              const SizedBox(height: 6),
+              _inputRow(
+                'p3',
+                player3,
+                p3Color,
+                p3StihController,
+                p3ZvanjeController,
+              ),
+
+              const SizedBox(height: 10),
+
+              Container(
+                width: double.infinity,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF1565C0).withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: addRound,
+                  icon: const Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  label: const Text(
+                    "Dodaj rundu",
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
