@@ -2,11 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Round {
-  int p1;
-  int p2;
-  int p3;
+  int p1Stih;
+  int p1Zvanje;
+  int p2Stih;
+  int p2Zvanje;
+  int p3Stih;
+  int p3Zvanje;
 
-  Round(this.p1, this.p2, this.p3);
+  Round(
+    this.p1Stih,
+    this.p1Zvanje,
+    this.p2Stih,
+    this.p2Zvanje,
+    this.p3Stih,
+    this.p3Zvanje,
+  );
+
+  // Ukupni bodovi po igraču (štih + zvanje)
+  int get totalP1 => p1Stih + p1Zvanje;
+  int get totalP2 => p2Stih + p2Zvanje;
+  int get totalP3 => p3Stih + p3Zvanje;
 }
 
 class GameScreen extends StatefulWidget {
@@ -26,11 +41,44 @@ class _GameScreenState extends State<GameScreen> {
   int wins3 = 0;
 
   int limit = 1001;
+  final int bazaIgra = 162;
+
+  List<Round> rounds = [];
+
+  // Controlleri za štihove
+  final TextEditingController p1StihController = TextEditingController();
+  final TextEditingController p2StihController = TextEditingController();
+  final TextEditingController p3StihController = TextEditingController();
+
+  // Controlleri za zvanja
+  final TextEditingController p1ZvanjeController = TextEditingController();
+  final TextEditingController p2ZvanjeController = TextEditingController();
+  final TextEditingController p3ZvanjeController = TextEditingController();
+
+  // Ukupni bodovi po igraču
+  int get score1 => rounds.fold(0, (sum, r) => sum + r.totalP1);
+  int get score2 => rounds.fold(0, (sum, r) => sum + r.totalP2);
+  int get score3 => rounds.fold(0, (sum, r) => sum + r.totalP3);
 
   @override
   void initState() {
     super.initState();
     loadSettings();
+
+    // Listener za automatski izračun p3 štihova
+    p1StihController.addListener(updateP3Auto);
+    p2StihController.addListener(updateP3Auto);
+  }
+
+  @override
+  void dispose() {
+    p1StihController.dispose();
+    p2StihController.dispose();
+    p3StihController.dispose();
+    p1ZvanjeController.dispose();
+    p2ZvanjeController.dispose();
+    p3ZvanjeController.dispose();
+    super.dispose();
   }
 
   Future<void> loadSettings() async {
@@ -41,6 +89,27 @@ class _GameScreenState extends State<GameScreen> {
       player2 = prefs.getString('player2') ?? "Igrač 2";
       player3 = prefs.getString('player3') ?? "Igrač 3";
       limit = prefs.getInt('limit') ?? 1001;
+      wins1 = prefs.getInt('wins1') ?? 0;
+      wins2 = prefs.getInt('wins2') ?? 0;
+      wins3 = prefs.getInt('wins3') ?? 0;
+    });
+  }
+
+  Future<void> saveWins() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt('wins1', wins1);
+    prefs.setInt('wins2', wins2);
+    prefs.setInt('wins3', wins3);
+  }
+
+  // Automatski izračunaj p3 štihove (bazaIgra - p1 - p2)
+  void updateP3Auto() {
+    int p1 = int.tryParse(p1StihController.text) ?? 0;
+    int p2 = int.tryParse(p2StihController.text) ?? 0;
+    int p3Auto = bazaIgra - p1 - p2;
+
+    setState(() {
+      p3StihController.text = p3Auto >= 0 ? p3Auto.toString() : '0';
     });
   }
 
@@ -52,36 +121,39 @@ class _GameScreenState extends State<GameScreen> {
     if (s1 >= limit || s2 >= limit || s3 >= limit) {
       int maxScore = [s1, s2, s3].reduce((a, b) => a > b ? a : b);
 
-      String winner = "";
-
+      List<String> winners = [];
       if (s1 == maxScore) {
         wins1++;
-        winner = player1;
+        winners.add(player1);
       }
-
       if (s2 == maxScore) {
         wins2++;
-        winner = player2;
+        winners.add(player2);
       }
-
       if (s3 == maxScore) {
         wins3++;
-        winner = player3;
+        winners.add(player3);
       }
+
+      saveWins();
 
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
             title: const Text("Kraj runde"),
-            content: Text("$winner je pobijedio!"),
+            content: Text(
+              winners.length > 1
+                  ? "Neriješeno! Pobjednici: ${winners.join(', ')}"
+                  : "${winners.first} je pobijedio!",
+            ),
             actions: [
               TextButton(
                 onPressed: () {
                   setState(() {
                     rounds.clear();
                   });
-
                   Navigator.pop(context);
                 },
                 child: const Text("Nova runda"),
@@ -93,88 +165,117 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  List<Round> rounds = [];
-
-  final TextEditingController p1Controller = TextEditingController();
-  final TextEditingController p2Controller = TextEditingController();
-  final TextEditingController p3Controller = TextEditingController();
-
-  int get score1 => rounds.fold(0, (sum, r) => sum + r.p1);
-  int get score2 => rounds.fold(0, (sum, r) => sum + r.p2);
-  int get score3 => rounds.fold(0, (sum, r) => sum + r.p3);
-
   void addRound() {
-    int p1 = int.tryParse(p1Controller.text) ?? 0;
-    int p2 = int.tryParse(p2Controller.text) ?? 0;
-    int p3 = int.tryParse(p3Controller.text) ?? 0;
+    int p1Stih = int.tryParse(p1StihController.text) ?? 0;
+    int p1Zvanje = int.tryParse(p1ZvanjeController.text) ?? 0;
+    int p2Stih = int.tryParse(p2StihController.text) ?? 0;
+    int p2Zvanje = int.tryParse(p2ZvanjeController.text) ?? 0;
+    int p3Stih = int.tryParse(p3StihController.text) ?? 0;
+    int p3Zvanje = int.tryParse(p3ZvanjeController.text) ?? 0;
 
     setState(() {
-      rounds.add(Round(p1, p2, p3));
+      rounds.add(Round(p1Stih, p1Zvanje, p2Stih, p2Zvanje, p3Stih, p3Zvanje));
     });
 
     checkWinner();
 
-    p1Controller.clear();
-    p2Controller.clear();
-    p3Controller.clear();
+    // Clear sva polja
+    p1StihController.clear();
+    p1ZvanjeController.clear();
+    p2StihController.clear();
+    p2ZvanjeController.clear();
+    p3StihController.clear();
+    p3ZvanjeController.clear();
   }
 
   void editRound(int index) {
     final r = rounds[index];
 
-    TextEditingController e1 = TextEditingController(text: r.p1.toString());
-    TextEditingController e2 = TextEditingController(text: r.p2.toString());
-    TextEditingController e3 = TextEditingController(text: r.p3.toString());
+    TextEditingController e1Stih = TextEditingController(
+      text: r.p1Stih.toString(),
+    );
+    TextEditingController e1Zvanje = TextEditingController(
+      text: r.p1Zvanje.toString(),
+    );
+    TextEditingController e2Stih = TextEditingController(
+      text: r.p2Stih.toString(),
+    );
+    TextEditingController e2Zvanje = TextEditingController(
+      text: r.p2Zvanje.toString(),
+    );
+    TextEditingController e3Stih = TextEditingController(
+      text: r.p3Stih.toString(),
+    );
+    TextEditingController e3Zvanje = TextEditingController(
+      text: r.p3Zvanje.toString(),
+    );
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Uredi rundu"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: e1,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Igrač 1"),
-              ),
-
-              TextField(
-                controller: e2,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Igrač 2"),
-              ),
-
-              TextField(
-                controller: e3,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Igrač 3"),
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: e1Stih,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "$player1 štih"),
+                ),
+                TextField(
+                  controller: e1Zvanje,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "$player1 zvanje"),
+                ),
+                const Divider(),
+                TextField(
+                  controller: e2Stih,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "$player2 štih"),
+                ),
+                TextField(
+                  controller: e2Zvanje,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "$player2 zvanje"),
+                ),
+                const Divider(),
+                TextField(
+                  controller: e3Stih,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "$player3 štih"),
+                ),
+                TextField(
+                  controller: e3Zvanje,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "$player3 zvanje"),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 setState(() {
                   rounds[index] = Round(
-                    int.tryParse(e1.text) ?? 0,
-                    int.tryParse(e2.text) ?? 0,
-                    int.tryParse(e3.text) ?? 0,
+                    int.tryParse(e1Stih.text) ?? 0,
+                    int.tryParse(e1Zvanje.text) ?? 0,
+                    int.tryParse(e2Stih.text) ?? 0,
+                    int.tryParse(e2Zvanje.text) ?? 0,
+                    int.tryParse(e3Stih.text) ?? 0,
+                    int.tryParse(e3Zvanje.text) ?? 0,
                   );
                 });
-
                 Navigator.pop(context);
               },
               child: const Text("Spremi"),
             ),
-
             TextButton(
               onPressed: () {
                 setState(() {
                   rounds.removeAt(index);
                 });
-
                 Navigator.pop(context);
               },
               child: const Text("Obriši"),
@@ -185,36 +286,82 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  void resetWins() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Reset pobjeda"),
+          content: const Text(
+            "Jeste li sigurni da želite resetirati sve pobjede?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Odustani"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  wins1 = 0;
+                  wins2 = 0;
+                  wins3 = 0;
+                });
+                saveWins();
+                Navigator.pop(context);
+              },
+              child: const Text("Reset", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Igra")),
-
+      appBar: AppBar(
+        title: const Text("Belot Blok"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: resetWins,
+            tooltip: "Reset pobjeda",
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           children: [
+            // Prikaz rezultata igrača
             Row(
               children: [
                 Expanded(
                   child: Card(
-                    color: Colors.white,
+                    color: Colors.blue[50],
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Column(
                         children: [
-                          Text(player1, style: const TextStyle(fontSize: 18)),
+                          Text(
+                            player1,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           Text(
                             "$score1",
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: Colors.blue,
                             ),
                           ),
                           Text(
-                            "Pobjede: $wins1",
+                            "🏆 $wins1",
                             style: const TextStyle(fontSize: 14),
                           ),
                         ],
@@ -222,25 +369,31 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4), // mali razmak
+                const SizedBox(width: 4),
                 Expanded(
                   child: Card(
-                    color: Colors.white,
+                    color: Colors.green[50],
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Column(
                         children: [
-                          Text(player2, style: const TextStyle(fontSize: 18)),
+                          Text(
+                            player2,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           Text(
                             "$score2",
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: Colors.green,
                             ),
                           ),
                           Text(
-                            "Pobjede: $wins2",
+                            "🏆 $wins2",
                             style: const TextStyle(fontSize: 14),
                           ),
                         ],
@@ -248,25 +401,31 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4), // mali razmak
+                const SizedBox(width: 4),
                 Expanded(
                   child: Card(
-                    color: Colors.white,
+                    color: Colors.red[50],
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Column(
                         children: [
-                          Text(player3, style: const TextStyle(fontSize: 18)),
+                          Text(
+                            player3,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           Text(
                             "$score3",
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: Colors.red,
                             ),
                           ),
                           Text(
-                            "Pobjede: $wins3",
+                            "🏆 $wins3",
                             style: const TextStyle(fontSize: 14),
                           ),
                         ],
@@ -277,8 +436,9 @@ class _GameScreenState extends State<GameScreen> {
               ],
             ),
 
-            const Divider(),
+            const SizedBox(height: 8),
 
+            // Lista rundi
             Expanded(
               child: ListView.builder(
                 itemCount: rounds.length,
@@ -292,28 +452,77 @@ class _GameScreenState extends State<GameScreen> {
                         "Runda ${index + 1}",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "${r.p1}",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.blue,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    "${r.p1Stih}",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  if (r.p1Zvanje > 0)
+                                    Text(
+                                      "+${r.p1Zvanje}",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              Column(
+                                children: [
+                                  Text(
+                                    "${r.p2Stih}",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                  if (r.p2Zvanje > 0)
+                                    Text(
+                                      "+${r.p2Zvanje}",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              Column(
+                                children: [
+                                  Text(
+                                    "${r.p3Stih}",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  if (r.p3Zvanje > 0)
+                                    Text(
+                                      "+${r.p3Zvanje}",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 4),
                           Text(
-                            "${r.p2}",
+                            "Ukupno: ${r.totalP1 + r.totalP2 + r.totalP3} bodova",
                             style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.green,
-                            ),
-                          ),
-                          Text(
-                            "${r.p3}",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.red,
+                              fontSize: 11,
+                              color: Colors.grey,
                             ),
                           ),
                         ],
@@ -324,66 +533,121 @@ class _GameScreenState extends State<GameScreen> {
                 },
               ),
             ),
+
             const Divider(),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: TextField(
-                controller: p1Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: player1,
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+            // Input polja za novu rundu
+            Text(
+              "Nova igra (baza: $bazaIgra)",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+
+            // Igrač 1
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: p1StihController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "$player1 štih",
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.blue[50],
+                    ),
                   ),
                 ),
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: TextField(
-                controller: p2Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: player2,
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: p1ZvanjeController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Zvanje",
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.blue[50],
+                    ),
                   ),
                 ),
-                style: const TextStyle(fontSize: 20),
-              ),
+              ],
             ),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: TextField(
-                controller: p3Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: player3,
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 8),
+
+            // Igrač 2
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: p2StihController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "$player2 štih",
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.green[50],
+                    ),
                   ),
                 ),
-                style: const TextStyle(fontSize: 20),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: p2ZvanjeController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Zvanje",
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.green[50],
+                    ),
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
+
+            // Igrač 3 (auto štih)
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: p3StihController,
+                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: "$player3 štih (auto)",
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.red[50],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: p3ZvanjeController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Zvanje",
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.red[50],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
 
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -392,7 +656,7 @@ class _GameScreenState extends State<GameScreen> {
                 onPressed: addRound,
                 child: const Text(
                   "Dodaj rundu",
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
