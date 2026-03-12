@@ -1,86 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class Round {
-  int p1Stih;
-  int p1Zvanje;
-  int p2Stih;
-  int p2Zvanje;
-  int p3Stih;
-  int p3Zvanje;
+class RoundDuo {
+  int t1Stih;
+  int t1Zvanje;
+  int t2Stih;
+  int t2Zvanje;
   String? zvac;
 
-  Round(
-    this.p1Stih,
-    this.p1Zvanje,
-    this.p2Stih,
-    this.p2Zvanje,
-    this.p3Stih,
-    this.p3Zvanje, {
-    this.zvac,
-  });
+  RoundDuo(this.t1Stih, this.t1Zvanje, this.t2Stih, this.t2Zvanje, {this.zvac});
 
-  int get totalP1 => p1Stih + p1Zvanje;
-  int get totalP2 => p2Stih + p2Zvanje;
-  int get totalP3 => p3Stih + p3Zvanje;
+  int get totalT1 => t1Stih + t1Zvanje;
+  int get totalT2 => t2Stih + t2Zvanje;
 }
 
-class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+class GameScreenDuo extends StatefulWidget {
+  const GameScreenDuo({super.key});
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  State<GameScreenDuo> createState() => _GameScreenDuoState();
 }
 
-class _GameScreenState extends State<GameScreen> {
-  String player1 = "Igrač 1";
-  String player2 = "Igrač 2";
-  String player3 = "Igrač 3";
+class _GameScreenDuoState extends State<GameScreenDuo> {
+  String team1 = "Mi";
+  String team2 = "Vi";
 
   int wins1 = 0;
   int wins2 = 0;
-  int wins3 = 0;
 
   int limit = 1001;
   final int bazaIgra = 162;
 
-  String? zvaoIgrac;
-  String? autoPlayer;
+  String? zvaoTim;
+  String? autoTeam;
 
   int get trenutnaIgra =>
       bazaIgra +
-      (int.tryParse(p1ZvanjeController.text) ?? 0) +
-      (int.tryParse(p2ZvanjeController.text) ?? 0) +
-      (int.tryParse(p3ZvanjeController.text) ?? 0);
+      (int.tryParse(t1ZvanjeController.text) ?? 0) +
+      (int.tryParse(t2ZvanjeController.text) ?? 0);
 
-  List<Round> rounds = [];
+  List<RoundDuo> rounds = [];
 
-  final TextEditingController p1StihController = TextEditingController();
-  final TextEditingController p2StihController = TextEditingController();
-  final TextEditingController p3StihController = TextEditingController();
-  final TextEditingController p1ZvanjeController = TextEditingController();
-  final TextEditingController p2ZvanjeController = TextEditingController();
-  final TextEditingController p3ZvanjeController = TextEditingController();
+  final TextEditingController t1StihController = TextEditingController();
+  final TextEditingController t2StihController = TextEditingController();
+  final TextEditingController t1ZvanjeController = TextEditingController();
+  final TextEditingController t2ZvanjeController = TextEditingController();
 
-  int get score1 => rounds.fold(0, (sum, r) => sum + r.totalP1);
-  int get score2 => rounds.fold(0, (sum, r) => sum + r.totalP2);
-  int get score3 => rounds.fold(0, (sum, r) => sum + r.totalP3);
+  int get score1 => rounds.fold(0, (sum, r) => sum + r.totalT1);
+  int get score2 => rounds.fold(0, (sum, r) => sum + r.totalT2);
 
-  static const Color p1Color = Colors.blue;
-  static const Color p2Color = Colors.green;
-  static const Color p3Color = Colors.red;
-
-  Color _zvacColor(String? zvac) {
-    if (zvac == 'p1') return p1Color;
-    if (zvac == 'p2') return p2Color;
-    if (zvac == 'p3') return p3Color;
-    return Colors.blueAccent;
-  }
+  static const Color t1Color = Colors.blue;
+  static const Color t2Color = Colors.red;
 
   List<Color> _zvacGradient(String? zvac) {
-    if (zvac == 'p1') return [const Color(0xFF1565C0), p1Color];
-    if (zvac == 'p2') return [const Color(0xFF2E7D32), p2Color];
-    if (zvac == 'p3') return [const Color(0xFFB71C1C), p3Color];
+    if (zvac == 't1') return [const Color(0xFF1565C0), t1Color];
+    if (zvac == 't2') return [const Color(0xFFB71C1C), t2Color];
     return [const Color(0xFF1565C0), const Color(0xFF42A5F5)];
   }
 
@@ -88,30 +62,25 @@ class _GameScreenState extends State<GameScreen> {
   void initState() {
     super.initState();
     loadSettings();
-    p1StihController.addListener(_calculateAuto);
-    p2StihController.addListener(_calculateAuto);
-    p3StihController.addListener(_calculateAuto);
-    p1ZvanjeController.addListener(() => setState(() {}));
-    p2ZvanjeController.addListener(() => setState(() {}));
-    p3ZvanjeController.addListener(() => setState(() {}));
+    t1StihController.addListener(_calculateAuto);
+    t2StihController.addListener(_calculateAuto);
+    t1ZvanjeController.addListener(() => setState(() {}));
+    t2ZvanjeController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    p1StihController.dispose();
-    p2StihController.dispose();
-    p3StihController.dispose();
-    p1ZvanjeController.dispose();
-    p2ZvanjeController.dispose();
-    p3ZvanjeController.dispose();
+    t1StihController.dispose();
+    t2StihController.dispose();
+    t1ZvanjeController.dispose();
+    t2ZvanjeController.dispose();
     super.dispose();
   }
 
   void _calculateAuto() {
     Map<String, TextEditingController> ctrls = {
-      'p1': p1StihController,
-      'p2': p2StihController,
-      'p3': p3StihController,
+      't1': t1StihController,
+      't2': t2StihController,
     };
 
     List<String> filled = [];
@@ -119,30 +88,25 @@ class _GameScreenState extends State<GameScreen> {
       String text = entry.value.text.trim();
       if (text.isNotEmpty &&
           int.tryParse(text) != null &&
-          autoPlayer != entry.key) {
+          autoTeam != entry.key) {
         filled.add(entry.key);
       }
     }
 
-    if (filled.length == 2) {
-      String auto = ['p1', 'p2', 'p3'].firstWhere((p) => !filled.contains(p));
-      int sum = filled.fold(
-        0,
-        (s, p) => s + (int.tryParse(ctrls[p]!.text) ?? 0),
-      );
-      int autoVal = bazaIgra - sum;
+    if (filled.length == 1) {
+      String auto = filled.first == 't1' ? 't2' : 't1';
+      int val = int.tryParse(ctrls[filled.first]!.text) ?? 0;
+      int autoVal = bazaIgra - val;
 
       setState(() {
-        autoPlayer = auto;
+        autoTeam = auto;
         ctrls[auto]!.text = autoVal >= 0 ? autoVal.toString() : '0';
       });
-    } else if (filled.length < 2) {
-      if (autoPlayer != null) {
-        String prevAuto = autoPlayer!;
-        setState(() => autoPlayer = null);
-        if (!filled.contains(prevAuto)) {
-          ctrls[prevAuto]!.clear();
-        }
+    } else if (filled.isEmpty) {
+      if (autoTeam != null) {
+        String prevAuto = autoTeam!;
+        setState(() => autoTeam = null);
+        ctrls[prevAuto]!.clear();
       }
     }
   }
@@ -152,30 +116,28 @@ class _GameScreenState extends State<GameScreen> {
     String data = rounds
         .map(
           (r) =>
-              '${r.p1Stih},${r.p1Zvanje},${r.p2Stih},${r.p2Zvanje},${r.p3Stih},${r.p3Zvanje},${r.zvac ?? ''}',
+              '${r.t1Stih},${r.t1Zvanje},${r.t2Stih},${r.t2Zvanje},${r.zvac ?? ''}',
         )
         .join('|');
-    prefs.setString('rounds', data);
+    prefs.setString('rounds_duo', data);
   }
 
   Future<void> loadRounds() async {
     final prefs = await SharedPreferences.getInstance();
-    String? data = prefs.getString('rounds');
+    String? data = prefs.getString('rounds_duo');
     if (data == null || data.isEmpty) return;
 
-    List<Round> loaded = [];
+    List<RoundDuo> loaded = [];
     for (String part in data.split('|')) {
       List<String> v = part.split(',');
-      if (v.length >= 6) {
+      if (v.length >= 4) {
         loaded.add(
-          Round(
+          RoundDuo(
             int.tryParse(v[0]) ?? 0,
             int.tryParse(v[1]) ?? 0,
             int.tryParse(v[2]) ?? 0,
             int.tryParse(v[3]) ?? 0,
-            int.tryParse(v[4]) ?? 0,
-            int.tryParse(v[5]) ?? 0,
-            zvac: v.length > 6 && v[6].isNotEmpty ? v[6] : null,
+            zvac: v.length > 4 && v[4].isNotEmpty ? v[4] : null,
           ),
         );
       }
@@ -186,53 +148,35 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      player1 = prefs.getString('player1') ?? "Igrač 1";
-      player2 = prefs.getString('player2') ?? "Igrač 2";
-      player3 = prefs.getString('player3') ?? "Igrač 3";
+      team1 = prefs.getString('team1') ?? "Mi";
+      team2 = prefs.getString('team2') ?? "Vi";
       limit = prefs.getInt('limit') ?? 1001;
-      wins1 = prefs.getInt('wins1') ?? 0;
-      wins2 = prefs.getInt('wins2') ?? 0;
-      wins3 = prefs.getInt('wins3') ?? 0;
+      wins1 = prefs.getInt('duo_wins1') ?? 0;
+      wins2 = prefs.getInt('duo_wins2') ?? 0;
     });
     await loadRounds();
   }
 
   Future<void> saveWins() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setInt('wins1', wins1);
-    prefs.setInt('wins2', wins2);
-    prefs.setInt('wins3', wins3);
+    prefs.setInt('duo_wins1', wins1);
+    prefs.setInt('duo_wins2', wins2);
   }
 
-  void _applyZvacLogika(
-    int p1Stih,
-    int p1Zv,
-    int p2Stih,
-    int p2Zv,
-    int p3Stih,
-    int p3Zv,
-  ) {
-    if (zvaoIgrac == null) {
-      setState(
-        () => rounds.add(Round(p1Stih, p1Zv, p2Stih, p2Zv, p3Stih, p3Zv)),
-      );
+  void _applyZvacLogika(int t1Stih, int t1Zv, int t2Stih, int t2Zv) {
+    if (zvaoTim == null) {
+      setState(() => rounds.add(RoundDuo(t1Stih, t1Zv, t2Stih, t2Zv)));
       saveRounds();
       return;
     }
 
     double pola = trenutnaIgra / 2;
-    int zvacTotal = zvaoIgrac == 'p1'
-        ? p1Stih + p1Zv
-        : zvaoIgrac == 'p2'
-        ? p2Stih + p2Zv
-        : p3Stih + p3Zv;
-
+    int zvacTotal = zvaoTim == 't1' ? t1Stih + t1Zv : t2Stih + t2Zv;
     bool pao = zvacTotal <= pola;
 
     if (pao) {
-      int final1 = zvaoIgrac == 'p1' ? 0 : p1Stih + p1Zv;
-      int final2 = zvaoIgrac == 'p2' ? 0 : p2Stih + p2Zv;
-      int final3 = zvaoIgrac == 'p3' ? 0 : p3Stih + p3Zv;
+      int final1 = zvaoTim == 't1' ? 0 : t1Stih + t1Zv;
+      int final2 = zvaoTim == 't2' ? 0 : t2Stih + t2Zv;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -242,11 +186,7 @@ class _GameScreenState extends State<GameScreen> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  "${zvaoIgrac == 'p1'
-                      ? player1
-                      : zvaoIgrac == 'p2'
-                      ? player2
-                      : player3} je PAO! (0 bodova)",
+                  "${zvaoTim == 't1' ? team1 : team2} su PALI! (0 bodova)",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -261,23 +201,18 @@ class _GameScreenState extends State<GameScreen> {
         ),
       );
 
-      setState(
-        () =>
-            rounds.add(Round(final1, 0, final2, 0, final3, 0, zvac: zvaoIgrac)),
-      );
+      setState(() => rounds.add(RoundDuo(final1, 0, final2, 0, zvac: zvaoTim)));
       saveRounds();
     } else {
       setState(
-        () => rounds.add(
-          Round(p1Stih, p1Zv, p2Stih, p2Zv, p3Stih, p3Zv, zvac: zvaoIgrac),
-        ),
+        () => rounds.add(RoundDuo(t1Stih, t1Zv, t2Stih, t2Zv, zvac: zvaoTim)),
       );
       saveRounds();
     }
   }
 
   void addRound() {
-    if (zvaoIgrac == null) {
+    if (zvaoTim == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -303,14 +238,12 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    int p1Stih = int.tryParse(p1StihController.text) ?? 0;
-    int p1Zvanje = int.tryParse(p1ZvanjeController.text) ?? 0;
-    int p2Stih = int.tryParse(p2StihController.text) ?? 0;
-    int p2Zvanje = int.tryParse(p2ZvanjeController.text) ?? 0;
-    int p3Stih = int.tryParse(p3StihController.text) ?? 0;
-    int p3Zvanje = int.tryParse(p3ZvanjeController.text) ?? 0;
+    int t1Stih = int.tryParse(t1StihController.text) ?? 0;
+    int t1Zvanje = int.tryParse(t1ZvanjeController.text) ?? 0;
+    int t2Stih = int.tryParse(t2StihController.text) ?? 0;
+    int t2Zvanje = int.tryParse(t2ZvanjeController.text) ?? 0;
 
-    int sumaStihova = p1Stih + p2Stih + p3Stih;
+    int sumaStihova = t1Stih + t2Stih;
     if (sumaStihova != bazaIgra) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -337,42 +270,35 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    _applyZvacLogika(p1Stih, p1Zvanje, p2Stih, p2Zvanje, p3Stih, p3Zvanje);
+    _applyZvacLogika(t1Stih, t1Zvanje, t2Stih, t2Zvanje);
     checkWinner();
 
-    p1StihController.clear();
-    p1ZvanjeController.clear();
-    p2StihController.clear();
-    p2ZvanjeController.clear();
-    p3StihController.clear();
-    p3ZvanjeController.clear();
+    t1StihController.clear();
+    t1ZvanjeController.clear();
+    t2StihController.clear();
+    t2ZvanjeController.clear();
 
     setState(() {
-      zvaoIgrac = null;
-      autoPlayer = null;
+      zvaoTim = null;
+      autoTeam = null;
     });
   }
 
   void checkWinner() {
     int s1 = score1;
     int s2 = score2;
-    int s3 = score3;
 
-    if (s1 >= limit || s2 >= limit || s3 >= limit) {
-      int maxScore = [s1, s2, s3].reduce((a, b) => a > b ? a : b);
+    if (s1 >= limit || s2 >= limit) {
+      int maxScore = s1 > s2 ? s1 : s2;
 
       List<String> winners = [];
       if (s1 == maxScore) {
         wins1++;
-        winners.add(player1);
+        winners.add(team1);
       }
       if (s2 == maxScore) {
         wins2++;
-        winners.add(player2);
-      }
-      if (s3 == maxScore) {
-        wins3++;
-        winners.add(player3);
+        winners.add(team2);
       }
 
       saveWins();
@@ -394,7 +320,7 @@ class _GameScreenState extends State<GameScreen> {
           content: Text(
             winners.length > 1
                 ? "Neriješeno!\n${winners.join(' i ')} dijele pobjedu!"
-                : "🏆 ${winners.first} je pobijedio!",
+                : "🏆 ${winners.first} pobjeđuju!",
             style: const TextStyle(fontSize: 18),
             textAlign: TextAlign.center,
           ),
@@ -414,7 +340,7 @@ class _GameScreenState extends State<GameScreen> {
                   Navigator.pop(context);
                 },
                 child: const Text(
-                  "Nova runda",
+                  "Nova igra",
                   style: TextStyle(color: Colors.white),
                 ),
               ),
@@ -427,30 +353,23 @@ class _GameScreenState extends State<GameScreen> {
 
   void editRound(int index) {
     final r = rounds[index];
-
-    final e1Stih = TextEditingController(text: r.p1Stih.toString());
-    final e1Zvanje = TextEditingController(text: r.p1Zvanje.toString());
-    final e2Stih = TextEditingController(text: r.p2Stih.toString());
-    final e2Zvanje = TextEditingController(text: r.p2Zvanje.toString());
-    final e3Stih = TextEditingController(text: r.p3Stih.toString());
-    final e3Zvanje = TextEditingController(text: r.p3Zvanje.toString());
+    final e1Stih = TextEditingController(text: r.t1Stih.toString());
+    final e1Zvanje = TextEditingController(text: r.t1Zvanje.toString());
+    final e2Stih = TextEditingController(text: r.t2Stih.toString());
+    final e2Zvanje = TextEditingController(text: r.t2Zvanje.toString());
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text("Uredi rundu ${index + 1}"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _editPlayerRow(player1, p1Color, e1Stih, e1Zvanje),
-              const Divider(height: 20),
-              _editPlayerRow(player2, p2Color, e2Stih, e2Zvanje),
-              const Divider(height: 20),
-              _editPlayerRow(player3, p3Color, e3Stih, e3Zvanje),
-            ],
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _editTeamRow(team1, t1Color, e1Stih, e1Zvanje),
+            const Divider(height: 20),
+            _editTeamRow(team2, t2Color, e2Stih, e2Zvanje),
+          ],
         ),
         actions: [
           TextButton(
@@ -465,13 +384,11 @@ class _GameScreenState extends State<GameScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
             onPressed: () {
               setState(() {
-                rounds[index] = Round(
+                rounds[index] = RoundDuo(
                   int.tryParse(e1Stih.text) ?? 0,
                   int.tryParse(e1Zvanje.text) ?? 0,
                   int.tryParse(e2Stih.text) ?? 0,
                   int.tryParse(e2Zvanje.text) ?? 0,
-                  int.tryParse(e3Stih.text) ?? 0,
-                  int.tryParse(e3Zvanje.text) ?? 0,
                   zvac: r.zvac,
                 );
               });
@@ -485,7 +402,7 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _editPlayerRow(
+  Widget _editTeamRow(
     String label,
     Color color,
     TextEditingController stihCtrl,
@@ -560,7 +477,6 @@ class _GameScreenState extends State<GameScreen> {
               setState(() {
                 wins1 = 0;
                 wins2 = 0;
-                wins3 = 0;
               });
               saveWins();
               Navigator.pop(context);
@@ -577,7 +493,6 @@ class _GameScreenState extends State<GameScreen> {
                 rounds.clear();
                 wins1 = 0;
                 wins2 = 0;
-                wins3 = 0;
               });
               saveWins();
               saveRounds();
@@ -590,7 +505,7 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _playerCard(String name, int score, int wins, Color color) {
+  Widget _teamCard(String name, int score, int wins, Color color) {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
@@ -614,7 +529,7 @@ class _GameScreenState extends State<GameScreen> {
             Text(
               name,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
                 letterSpacing: 0.5,
@@ -626,7 +541,7 @@ class _GameScreenState extends State<GameScreen> {
             Text(
               "$score",
               style: const TextStyle(
-                fontSize: 34,
+                fontSize: 38,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -649,19 +564,19 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _inputRow(
-    String playerKey,
+    String teamKey,
     String label,
     Color color,
     TextEditingController stihCtrl,
     TextEditingController zvanjeCtrl,
   ) {
-    bool isAuto = autoPlayer == playerKey;
-    bool isZvac = zvaoIgrac == playerKey;
+    bool isAuto = autoTeam == teamKey;
+    bool isZvac = zvaoTim == teamKey;
 
     return Row(
       children: [
         GestureDetector(
-          onTap: () => setState(() => zvaoIgrac = isZvac ? null : playerKey),
+          onTap: () => setState(() => zvaoTim = isZvac ? null : teamKey),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 52,
@@ -834,7 +749,7 @@ class _GameScreenState extends State<GameScreen> {
       backgroundColor: const Color(0xFFF0F2F5),
       appBar: AppBar(
         title: const Text(
-          "Belot Blok",
+          "Belot – Mi / Vi",
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 20,
@@ -865,18 +780,18 @@ class _GameScreenState extends State<GameScreen> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
+            // Tim kartice
             Row(
               children: [
-                _playerCard(player1, score1, wins1, p1Color),
-                const SizedBox(width: 8),
-                _playerCard(player2, score2, wins2, p2Color),
-                const SizedBox(width: 8),
-                _playerCard(player3, score3, wins3, p3Color),
+                _teamCard(team1, score1, wins1, t1Color),
+                const SizedBox(width: 12),
+                _teamCard(team2, score2, wins2, t2Color),
               ],
             ),
 
             const SizedBox(height: 10),
 
+            // Lista rundi
             Expanded(
               child: rounds.isEmpty
                   ? Center(
@@ -952,9 +867,8 @@ class _GameScreenState extends State<GameScreen> {
                             title: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _roundScore(r.p1Stih, r.p1Zvanje, p1Color),
-                                _roundScore(r.p2Stih, r.p2Zvanje, p2Color),
-                                _roundScore(r.p3Stih, r.p3Zvanje, p3Color),
+                                _roundScore(r.t1Stih, r.t1Zvanje, t1Color),
+                                _roundScore(r.t2Stih, r.t2Zvanje, t2Color),
                               ],
                             ),
                             onTap: () => editRound(index),
@@ -966,6 +880,7 @@ class _GameScreenState extends State<GameScreen> {
 
             const SizedBox(height: 8),
 
+            // Baza igre info
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
@@ -1004,27 +919,19 @@ class _GameScreenState extends State<GameScreen> {
             const SizedBox(height: 8),
 
             _inputRow(
-              'p1',
-              player1,
-              p1Color,
-              p1StihController,
-              p1ZvanjeController,
+              't1',
+              team1,
+              t1Color,
+              t1StihController,
+              t1ZvanjeController,
             ),
             const SizedBox(height: 6),
             _inputRow(
-              'p2',
-              player2,
-              p2Color,
-              p2StihController,
-              p2ZvanjeController,
-            ),
-            const SizedBox(height: 6),
-            _inputRow(
-              'p3',
-              player3,
-              p3Color,
-              p3StihController,
-              p3ZvanjeController,
+              't2',
+              team2,
+              t2Color,
+              t2StihController,
+              t2ZvanjeController,
             ),
 
             const SizedBox(height: 10),

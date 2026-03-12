@@ -11,16 +11,12 @@ class BelaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Bela Kalkulator',
+      title: 'Bela Trojka',
       debugShowCheckedModeBanner: false,
       home: const HomeScreen(),
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200],
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          titleMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        scaffoldBackgroundColor: const Color(0xFFF0F2F5),
       ),
     );
   }
